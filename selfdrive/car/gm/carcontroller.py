@@ -19,6 +19,14 @@ class CarController():
 
     self.params = CarControllerParams()
 
+    #TODO: confirm these values still apply. Based on Bolt Steering Column from 0.7.x
+    if CP.carFingerprint.endswith("_NR"):
+      self.STEER_MAX = 300
+      self.STEER_STEP = 1              # how often we update the steer cmd
+      self.STEER_DELTA_UP = 3          # ~0.75s time to peak torque (255/50hz/0.75s)
+      self.STEER_DELTA_DOWN = 7       # ~0.3s from peak torque to zero
+      self.MIN_STEER_SPEED = 3.
+
     self.packer_pt = CANPacker(DBC[CP.carFingerprint]['pt'])
     self.packer_obj = CANPacker(DBC[CP.carFingerprint]['radar'])
     self.packer_ch = CANPacker(DBC[CP.carFingerprint]['chassis'])
@@ -54,14 +62,51 @@ class CarController():
       apply_gas = int(round(interp(actuators.accel, P.GAS_LOOKUP_BP, P.GAS_LOOKUP_V)))
       apply_brake = int(round(interp(actuators.accel, P.BRAKE_LOOKUP_BP, P.BRAKE_LOOKUP_V)))
 
-    # Gas/regen and brakes - all at 25Hz
-    if (frame % 4) == 0:
-      idx = (frame // 4) % 4
+    if not CS.CP.carFingerprint.endswith("_NR"):
+      # Gas/regen and brakes - all at 25Hz
+      if (frame % 4) == 0:
+        idx = (frame // 4) % 4
 
-      at_full_stop = enabled and CS.out.standstill
-      near_stop = enabled and (CS.out.vEgo < P.NEAR_STOP_BRAKE_PHASE)
-      can_sends.append(gmcan.create_friction_brake_command(self.packer_ch, CanBus.CHASSIS, apply_brake, idx, near_stop, at_full_stop))
-      can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, apply_gas, idx, enabled, at_full_stop))
+        at_full_stop = enabled and CS.out.standstill
+        near_stop = enabled and (CS.out.vEgo < P.NEAR_STOP_BRAKE_PHASE)
+        can_sends.append(gmcan.create_friction_brake_command(self.packer_ch, CanBus.CHASSIS, apply_brake, idx, near_stop, at_full_stop))
+        can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, apply_gas, idx, enabled, at_full_stop))
+    elif CS.CP.enableGasInterceptor:
+      #It seems in L mode, accel / decel point is around 1/5
+      #0----decel-------0.2-------accel----------1
+      #new_gas = 0.8 * actuators.gas + 0.2
+      #new_brake = 0.2 * actuators.brake
+      #I am assuming we should not get both a gas and a break value...
+      #final_pedal2 = new_gas - new_brake
+      #TODO: Hysteresis
+      #TODO: Use friction brake via AEB for harder braking
+      # Not sure what the status of the above is - was not being used...
+
+
+      #JJS - no adjust yet - scaling needs to be -1 <-> +1
+      pedal_gas = clip(actuators.accel, 0., 1.)
+      #This would be more appropriate
+      #pedal_gas = clip(actuators.gas, 0., 1.)
+      if (frame % 4) == 0:
+        idx = (frame // 4) % 4
+        # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
+        # This prevents unexpected pedal range rescaling
+        can_sends.append(create_gas_command(self.packer_pt, pedal_gas, idx))
+
+    if (frame % 8) == 0:
+      can_sends.append(create_gas_multiplier_command(self.packer_pt, 1545, idx))
+      can_sends.append(create_gas_divisor_command(self.packer_pt, 1000, idx))
+      can_sends.append(create_gas_offset_command(self.packer_pt, 25, idx))
+      # The ECM in GM vehicles has a different resistance between signal and ground than honda and toyota
+      # Since the Pedal's resistance doesn't match, the values read by the ADC are incorrect
+      # Output values are fine
+      # formula is new_adc = ((raw_adc * MULTIPLIER) / DIVISOR) + OFFSET
+      # multiplier and divisor are used because we are limited to 16-bit integers on the panda
+      # The read ADC value must be multiplied sufficiently large that the division is integral
+      # Note: might be able to do the * 1000 part on pedal, but this is more flexible...
+      # Technically these only need to be sent once, but pedal may bounce. Sending on the 8's, probably don't need to be so freq
+      # Note: pedal ignores counter for these messages
+
 
     # Send dashboard UI commands (ACC status), 25hz
     if (frame % 4) == 0:
