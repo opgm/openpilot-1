@@ -107,41 +107,41 @@ class CarController():
         # Technically these only need to be sent once, but pedal may bounce. Sending on the 8's, probably don't need to be so freq
         # Note: pedal ignores counter for these messages
 
+    # TODO: Missed this - some only applies to ASCM
+    # # Send dashboard UI commands (ACC status), 25hz
+    # if (frame % 4) == 0:
+    #   send_fcw = hud_alert == VisualAlert.fcw
+    #   can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, enabled, hud_v_cruise * CV.MS_TO_KPH, hud_show_car, send_fcw))
 
-    # Send dashboard UI commands (ACC status), 25hz
-    if (frame % 4) == 0:
-      send_fcw = hud_alert == VisualAlert.fcw
-      can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, enabled, hud_v_cruise * CV.MS_TO_KPH, hud_show_car, send_fcw))
+    # # Radar needs to know current speed and yaw rate (50hz),
+    # # and that ADAS is alive (10hz)
+    # time_and_headlights_step = 10
+    # tt = frame * DT_CTRL
 
-    # Radar needs to know current speed and yaw rate (50hz),
-    # and that ADAS is alive (10hz)
-    time_and_headlights_step = 10
-    tt = frame * DT_CTRL
+    # if frame % time_and_headlights_step == 0:
+    #   idx = (frame // time_and_headlights_step) % 4
+    #   can_sends.append(gmcan.create_adas_time_status(CanBus.OBSTACLE, int((tt - self.start_time) * 60), idx))
+    #   can_sends.append(gmcan.create_adas_headlights_status(self.packer_obj, CanBus.OBSTACLE))
 
-    if frame % time_and_headlights_step == 0:
-      idx = (frame // time_and_headlights_step) % 4
-      can_sends.append(gmcan.create_adas_time_status(CanBus.OBSTACLE, int((tt - self.start_time) * 60), idx))
-      can_sends.append(gmcan.create_adas_headlights_status(self.packer_obj, CanBus.OBSTACLE))
+    # speed_and_accelerometer_step = 2
+    # if frame % speed_and_accelerometer_step == 0:
+    #   idx = (frame // speed_and_accelerometer_step) % 4
+    #   can_sends.append(gmcan.create_adas_steering_status(CanBus.OBSTACLE, idx))
+    #   can_sends.append(gmcan.create_adas_accelerometer_speed_status(CanBus.OBSTACLE, CS.out.vEgo, idx))
 
-    speed_and_accelerometer_step = 2
-    if frame % speed_and_accelerometer_step == 0:
-      idx = (frame // speed_and_accelerometer_step) % 4
-      can_sends.append(gmcan.create_adas_steering_status(CanBus.OBSTACLE, idx))
-      can_sends.append(gmcan.create_adas_accelerometer_speed_status(CanBus.OBSTACLE, CS.out.vEgo, idx))
+    # if frame % P.ADAS_KEEPALIVE_STEP == 0:
+    #   can_sends += gmcan.create_adas_keepalive(CanBus.POWERTRAIN)
 
-    if frame % P.ADAS_KEEPALIVE_STEP == 0:
-      can_sends += gmcan.create_adas_keepalive(CanBus.POWERTRAIN)
-
-    # Show green icon when LKA torque is applied, and
-    # alarming orange icon when approaching torque limit.
-    # If not sent again, LKA icon disappears in about 5 seconds.
-    # Conveniently, sending camera message periodically also works as a keepalive.
-    lka_active = CS.lkas_status == 1
-    lka_critical = lka_active and abs(actuators.steer) > 0.9
-    lka_icon_status = (lka_active, lka_critical)
-    if frame % P.CAMERA_KEEPALIVE_STEP == 0 or lka_icon_status != self.lka_icon_status_last:
-      steer_alert = hud_alert in [VisualAlert.steerRequired, VisualAlert.ldw]
-      can_sends.append(gmcan.create_lka_icon_command(CanBus.SW_GMLAN, lka_active, lka_critical, steer_alert))
-      self.lka_icon_status_last = lka_icon_status
+    # # Show green icon when LKA torque is applied, and
+    # # alarming orange icon when approaching torque limit.
+    # # If not sent again, LKA icon disappears in about 5 seconds.
+    # # Conveniently, sending camera message periodically also works as a keepalive.
+    # lka_active = CS.lkas_status == 1
+    # lka_critical = lka_active and abs(actuators.steer) > 0.9
+    # lka_icon_status = (lka_active, lka_critical)
+    # if frame % P.CAMERA_KEEPALIVE_STEP == 0 or lka_icon_status != self.lka_icon_status_last:
+    #   steer_alert = hud_alert in [VisualAlert.steerRequired, VisualAlert.ldw]
+    #   can_sends.append(gmcan.create_lka_icon_command(CanBus.SW_GMLAN, lka_active, lka_critical, steer_alert))
+    #   self.lka_icon_status_last = lka_icon_status
 
     return can_sends
