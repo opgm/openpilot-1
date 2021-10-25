@@ -243,7 +243,9 @@ class Controls:
 
     safety_mismatch = self.sm['pandaState'].safetyModel != self.CP.safetyModel or self.sm['pandaState'].safetyParam != self.CP.safetyParam
     if safety_mismatch or self.mismatch_counter >= 200:
-      self.events.add(EventName.controlsMismatch)
+      cloudlog.debug(f"#### Controls Mismatch safetyModel {self.sm['pandaState'].safetyModel}")
+      cloudlog.debug(f"#### Controls Mismatch safetyParam {self.sm['pandaState'].safetyParam}")
+      #self.events.add(EventName.controlsMismatch)
 
     if not self.sm['liveParameters'].valid:
       self.events.add(EventName.vehicleModelInvalid)
