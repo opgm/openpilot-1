@@ -9,6 +9,7 @@ from selfdrive.car.interfaces import CarInterfaceBase
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 
+#TODO: Look up safetyParam used in other ports - may be able to dramatically simplify panda code!!!
 class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -102,7 +103,6 @@ class CarInterface(CarInterfaceBase):
       if ret.enableGasInterceptor:
         ret.minEnableSpeed = 5 * CV.MPH_TO_MS #steering works down to 5mph; pedal to 0
       ret.mass = 1616. + STD_CARGO_KG
-      ret.safetyModel = car.CarParams.SafetyModel.gm
       ret.wheelbase = 2.60096
       ret.steerRatio = 16.8
       ret.steerRatioRear = 0.
@@ -112,7 +112,6 @@ class CarInterface(CarInterfaceBase):
     elif candidate == CAR.EQUINOX_NR:
       ret.minEnableSpeed = 18 * CV.MPH_TO_MS
       ret.mass = 3500. * CV.LB_TO_KG + STD_CARGO_KG # (3849+3708)/2
-      ret.safetyModel = car.CarParams.SafetyModel.gm
       ret.wheelbase = 2.72 #107.3 inches in meters
       ret.steerRatio = 14.4 # guess for tourx
       ret.steerRatioRear = 0. # unknown online
@@ -121,7 +120,6 @@ class CarInterface(CarInterfaceBase):
     elif candidate == CAR.TAHOE_NR:
       ret.minEnableSpeed = 18 * CV.MPH_TO_MS
       ret.mass = 5602. * CV.LB_TO_KG + STD_CARGO_KG # (3849+3708)/2
-      ret.safetyModel = car.CarParams.SafetyModel.gm
       ret.wheelbase = 2.95 #116 inches in meters
       ret.steerRatio = 17.3 # guess for tourx
       ret.steerRatioRear = 0. # unknown online
@@ -131,7 +129,6 @@ class CarInterface(CarInterfaceBase):
       # supports stop and go, but initial engage must be above 18mph (which include conservatism)
       ret.minEnableSpeed = 18 * CV.MPH_TO_MS
       ret.mass = 2645. + STD_CARGO_KG
-      ret.safetyModel = car.CarParams.SafetyModel.gm
       ret.wheelbase = 3.30
       ret.steerRatio = 17.3
       ret.steerRatioRear = 0.
