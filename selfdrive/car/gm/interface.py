@@ -5,6 +5,7 @@ from selfdrive.car.gm.values import CAR, CruiseButtons, \
                                     AccState, CarControllerParams
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
+from selfdrive.swaglog import cloudlog # Added so we can write out logs TODO: remove this
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
@@ -180,6 +181,7 @@ class CarInterface(CarInterfaceBase):
         if not (ret.cruiseState.enabled and ret.standstill):
           be.type = ButtonType.accelCruise  # Suppress resume button if we're resuming from stop so we don't adjust speed.
       elif but == CruiseButtons.DECEL_SET:
+        cloudlog.debug("#@#@#@ SET PRESSED!!")
         be.type = ButtonType.decelCruise
       elif but == CruiseButtons.CANCEL:
         if not self.CP.enableGasInterceptor: #need to use cancel to disable cc with Pedal
