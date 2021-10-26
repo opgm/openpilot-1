@@ -62,7 +62,7 @@ class CarController():
       apply_gas = int(round(interp(actuators.accel, P.GAS_LOOKUP_BP, P.GAS_LOOKUP_V)))
       apply_brake = int(round(interp(actuators.accel, P.BRAKE_LOOKUP_BP, P.BRAKE_LOOKUP_V)))
 
-    if not CS.CP.carFingerprint in NO_ASCM:
+    if CS.CP.carFingerprint not in NO_ASCM:
       # Gas/regen and brakes - all at 25Hz
       if (frame % 4) == 0:
         idx = (frame // 4) % 4
@@ -107,7 +107,7 @@ class CarController():
         # Technically these only need to be sent once, but pedal may bounce. Sending on the 8's, probably don't need to be so freq
         # Note: pedal ignores counter for these messages
 
-    if not CS.CP.carFingerprint in NO_ASCM:
+    if CS.CP.carFingerprint not in NO_ASCM:
       # Send dashboard UI commands (ACC status), 25hz
       if (frame % 4) == 0:
         send_fcw = hud_alert == VisualAlert.fcw

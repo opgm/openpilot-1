@@ -4,7 +4,7 @@ from selfdrive.config import Conversions as CV
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.car.gm.values import DBC, CAR, AccState, CanBus, \
+from selfdrive.car.gm.values import DBC, AccState, CanBus, \
                                     CruiseButtons, STEER_THRESHOLD, EV_CAR
 
 
