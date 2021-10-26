@@ -234,7 +234,7 @@ class CarInterface(CarInterfaceBase):
     # if not self.CP.enableGasInterceptor:
     #   enabled = c.enabled and not self.CS.out.gasPressed
     # else:
-    #   enabled = c.enabled
+    enabled = c.enabled
 
     can_sends = self.CC.update(enabled, self.CS, self.frame,
                                c.actuators,
