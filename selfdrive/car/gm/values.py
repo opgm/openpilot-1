@@ -49,9 +49,8 @@ class CAR:
   MALIBU = "CHEVROLET MALIBU PREMIER 2017"
   ACADIA = "GMC ACADIA DENALI 2018"
   BUICK_REGAL = "BUICK REGAL ESSENCE 2018"
-  # Vehicles without radar must end with "_NR"
-  # Separate car def is required (for now) unless there is a way to detect it when it has been unplugged...
-  #TODO: find a way to make this a flag
+  # Separate car def is required when there is no ASCM
+  # (for now) unless there is a way to detect it when it has been unplugged...
   VOLT_NR = "CHEVROLET VOLT NO RADAR"
   MALIBU_NR = "CHEVROLET MALIBU NO RADAR"
   ACADIA_NR = "GMC ACADIA DENALI NO RADAR"
@@ -74,6 +73,7 @@ class AccState:
   FAULTED = 3
   STANDSTILL = 4
 
+# TODO: update these values for Direct OBD w ASCM and without, Universal harness w and wo ascm, cam harness
 class CanBus:
   POWERTRAIN = 0
   OBSTACLE = 1
@@ -191,6 +191,9 @@ FINGERPRINTS = {
 }
 
 STEER_THRESHOLD = 1.0
+
+EV_CAR = set([CAR.BOLT_NR, CAR.VOLT, CAR.VOLT_NR])
+NO_ASCM = set([CAR.VOLT_NR, CAR.MALIBU_NR, CAR.ACADIA_NR, CAR.BOLT_NR, CAR.EQUINOX_NR, CAR.TAHOE_NR])
 
 DBC = {
   CAR.HOLDEN_ASTRA: dbc_dict('gm_global_a_powertrain', 'gm_global_a_object', chassis_dbc='gm_global_a_chassis'),
