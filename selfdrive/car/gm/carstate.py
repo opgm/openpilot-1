@@ -5,7 +5,7 @@ from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import CarStateBase
 from selfdrive.car.gm.values import DBC, CAR, AccState, CanBus, \
-                                    CruiseButtons, STEER_THRESHOLD
+                                    CruiseButtons, STEER_THRESHOLD, EV_CAR
 
 
 class CarState(CarStateBase):
@@ -70,8 +70,7 @@ class CarState(CarStateBase):
 
     ret.brakePressed = ret.brake > 1e-5
     # Regen braking is braking
-    # TODO: something better than a bunch of ors
-    if self.car_fingerprint == CAR.VOLT or self.car_fingerprint == CAR.VOLT_NR or self.car_fingerprint == CAR.BOLT_NR:
+    if self.car_fingerprint in EV_CAR:
       ret.brakePressed = ret.brakePressed or bool(pt_cp.vl["EBCMRegenPaddle"]["RegenPaddle"])
 
     ret.cruiseState.enabled = self.pcm_acc_status != AccState.OFF
@@ -132,7 +131,7 @@ class CarState(CarStateBase):
       signals.append(("INTERCEPTOR_GAS2", "GAS_SENSOR", 0))
       checks.append(("GAS_SENSOR", 50))
 
-    if CP.carFingerprint == CAR.VOLT or CP.carFingerprint == CAR.BOLT_NR:
+    if CP.carFingerprint in EV_CAR:
       signals += [
         ("RegenPaddle", "EBCMRegenPaddle", 0),
       ]

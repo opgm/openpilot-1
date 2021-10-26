@@ -1,10 +1,10 @@
 from cereal import car
 from common.realtime import DT_CTRL
-from common.numpy_fast import interp
+from common.numpy_fast import interp, clip
 from selfdrive.config import Conversions as CV
 from selfdrive.car import apply_std_steer_torque_limits, create_gas_command, create_gas_multiplier_command, create_gas_divisor_command, create_gas_offset_command
 from selfdrive.car.gm import gmcan
-from selfdrive.car.gm.values import DBC, CanBus, CarControllerParams
+from selfdrive.car.gm.values import DBC, NO_ASCM, CanBus, CarControllerParams
 from opendbc.can.packer import CANPacker
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -20,7 +20,7 @@ class CarController():
     self.params = CarControllerParams()
 
     #TODO: confirm these values still apply. Based on Bolt Steering Column from 0.7.x
-    if CP.carFingerprint.endswith("_NR"):
+    if CP.carFingerprint in NO_ASCM:
       self.STEER_MAX = 300
       self.STEER_STEP = 1              # how often we update the steer cmd
       self.STEER_DELTA_UP = 3          # ~0.75s time to peak torque (255/50hz/0.75s)
@@ -62,7 +62,7 @@ class CarController():
       apply_gas = int(round(interp(actuators.accel, P.GAS_LOOKUP_BP, P.GAS_LOOKUP_V)))
       apply_brake = int(round(interp(actuators.accel, P.BRAKE_LOOKUP_BP, P.BRAKE_LOOKUP_V)))
 
-    if not CS.CP.carFingerprint.endswith("_NR"):
+    if not CS.CP.carFingerprint in NO_ASCM:
       # Gas/regen and brakes - all at 25Hz
       if (frame % 4) == 0:
         idx = (frame // 4) % 4
@@ -85,7 +85,7 @@ class CarController():
 
       #JJS - no adjust yet - scaling needs to be -1 <-> +1
       pedal_gas = clip(actuators.accel, 0., 1.)
-      #This would be more appropriate
+      #This would be more appropriate?
       #pedal_gas = clip(actuators.gas, 0., 1.)
       if (frame % 4) == 0:
         idx = (frame // 4) % 4
@@ -107,41 +107,41 @@ class CarController():
         # Technically these only need to be sent once, but pedal may bounce. Sending on the 8's, probably don't need to be so freq
         # Note: pedal ignores counter for these messages
 
-    # TODO: Missed this - some only applies to ASCM
-    # # Send dashboard UI commands (ACC status), 25hz
-    # if (frame % 4) == 0:
-    #   send_fcw = hud_alert == VisualAlert.fcw
-    #   can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, enabled, hud_v_cruise * CV.MS_TO_KPH, hud_show_car, send_fcw))
+    if not CS.CP.carFingerprint in NO_ASCM:
+      # Send dashboard UI commands (ACC status), 25hz
+      if (frame % 4) == 0:
+        send_fcw = hud_alert == VisualAlert.fcw
+        can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, enabled, hud_v_cruise * CV.MS_TO_KPH, hud_show_car, send_fcw))
 
-    # # Radar needs to know current speed and yaw rate (50hz),
-    # # and that ADAS is alive (10hz)
-    # time_and_headlights_step = 10
-    # tt = frame * DT_CTRL
+      # Radar needs to know current speed and yaw rate (50hz),
+      # and that ADAS is alive (10hz)
+      time_and_headlights_step = 10
+      tt = frame * DT_CTRL
 
-    # if frame % time_and_headlights_step == 0:
-    #   idx = (frame // time_and_headlights_step) % 4
-    #   can_sends.append(gmcan.create_adas_time_status(CanBus.OBSTACLE, int((tt - self.start_time) * 60), idx))
-    #   can_sends.append(gmcan.create_adas_headlights_status(self.packer_obj, CanBus.OBSTACLE))
+      if frame % time_and_headlights_step == 0:
+        idx = (frame // time_and_headlights_step) % 4
+        can_sends.append(gmcan.create_adas_time_status(CanBus.OBSTACLE, int((tt - self.start_time) * 60), idx))
+        can_sends.append(gmcan.create_adas_headlights_status(self.packer_obj, CanBus.OBSTACLE))
 
-    # speed_and_accelerometer_step = 2
-    # if frame % speed_and_accelerometer_step == 0:
-    #   idx = (frame // speed_and_accelerometer_step) % 4
-    #   can_sends.append(gmcan.create_adas_steering_status(CanBus.OBSTACLE, idx))
-    #   can_sends.append(gmcan.create_adas_accelerometer_speed_status(CanBus.OBSTACLE, CS.out.vEgo, idx))
+      speed_and_accelerometer_step = 2
+      if frame % speed_and_accelerometer_step == 0:
+        idx = (frame // speed_and_accelerometer_step) % 4
+        can_sends.append(gmcan.create_adas_steering_status(CanBus.OBSTACLE, idx))
+        can_sends.append(gmcan.create_adas_accelerometer_speed_status(CanBus.OBSTACLE, CS.out.vEgo, idx))
 
-    # if frame % P.ADAS_KEEPALIVE_STEP == 0:
-    #   can_sends += gmcan.create_adas_keepalive(CanBus.POWERTRAIN)
+      if frame % P.ADAS_KEEPALIVE_STEP == 0:
+        can_sends += gmcan.create_adas_keepalive(CanBus.POWERTRAIN)
 
-    # # Show green icon when LKA torque is applied, and
-    # # alarming orange icon when approaching torque limit.
-    # # If not sent again, LKA icon disappears in about 5 seconds.
-    # # Conveniently, sending camera message periodically also works as a keepalive.
-    # lka_active = CS.lkas_status == 1
-    # lka_critical = lka_active and abs(actuators.steer) > 0.9
-    # lka_icon_status = (lka_active, lka_critical)
-    # if frame % P.CAMERA_KEEPALIVE_STEP == 0 or lka_icon_status != self.lka_icon_status_last:
-    #   steer_alert = hud_alert in [VisualAlert.steerRequired, VisualAlert.ldw]
-    #   can_sends.append(gmcan.create_lka_icon_command(CanBus.SW_GMLAN, lka_active, lka_critical, steer_alert))
-    #   self.lka_icon_status_last = lka_icon_status
+    # Show green icon when LKA torque is applied, and
+    # alarming orange icon when approaching torque limit.
+    # If not sent again, LKA icon disappears in about 5 seconds.
+    # Conveniently, sending camera message periodically also works as a keepalive.
+    lka_active = CS.lkas_status == 1
+    lka_critical = lka_active and abs(actuators.steer) > 0.9
+    lka_icon_status = (lka_active, lka_critical)
+    if frame % P.CAMERA_KEEPALIVE_STEP == 0 or lka_icon_status != self.lka_icon_status_last:
+      steer_alert = hud_alert in [VisualAlert.steerRequired, VisualAlert.ldw]
+      can_sends.append(gmcan.create_lka_icon_command(CanBus.SW_GMLAN, lka_active, lka_critical, steer_alert))
+      self.lka_icon_status_last = lka_icon_status
 
     return can_sends

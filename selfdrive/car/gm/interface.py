@@ -2,7 +2,7 @@
 from cereal import car
 from selfdrive.config import Conversions as CV
 from selfdrive.car.gm.values import CAR, CruiseButtons, \
-                                    AccState, CarControllerParams
+                                    AccState, CarControllerParams, NO_ASCM
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.swaglog import cloudlog # Added so we can write out logs TODO: remove this
@@ -200,8 +200,8 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.parkBrake)
     if ret.cruiseState.standstill:
       events.add(EventName.resumeRequired)
-    # if (not self.CS.CP.carFingerprint.endswith("_NR")) and self.CS.pcm_acc_status == AccState.FAULTED:
-    #   events.add(EventName.accFaulted)
+    if (not self.CS.CP.carFingerprint in NO_ASCM) and self.CS.pcm_acc_status == AccState.FAULTED:
+      events.add(EventName.accFaulted)
     if ret.vEgo < self.CP.minSteerSpeed:
       events.add(car.CarEvent.EventName.belowSteerSpeed)
 
@@ -230,7 +230,7 @@ class CarInterface(CarInterfaceBase):
     # In GM, PCM faults out if ACC command overlaps user gas.
     # Does not apply when using interceptor
     # TODO: not sure if CP is actually available
-    # TODO: Could use the _NR instead maybe...
+    # TODO: Could use NO_ASCM maybe?
     if not self.CP.enableGasInterceptor:
       enabled = c.enabled and not self.CS.out.gasPressed
     else:
