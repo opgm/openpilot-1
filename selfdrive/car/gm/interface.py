@@ -231,10 +231,11 @@ class CarInterface(CarInterfaceBase):
     # Does not apply when using interceptor
     # TODO: not sure if CP is actually available
     # TODO: Could use the _NR instead maybe...
-    if not self.CP.enableGasInterceptor:
-      enabled = c.enabled and not self.CS.out.gasPressed
-    else:
-      enabled = c.enabled
+    # TODO: JJS - removed for debugging
+    # if not self.CP.enableGasInterceptor:
+    #   enabled = c.enabled and not self.CS.out.gasPressed
+    # else:
+    #   enabled = c.enabled
 
     can_sends = self.CC.update(enabled, self.CS, self.frame,
                                c.actuators,
