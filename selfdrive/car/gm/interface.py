@@ -5,12 +5,10 @@ from selfdrive.car.gm.values import CAR, CruiseButtons, \
                                     AccState, CarControllerParams, NO_ASCM
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.swaglog import cloudlog # Added so we can write out logs TODO: remove this
 
 ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 
-#TODO: Look up safetyParam used in other ports - may be able to dramatically simplify panda code!!!
 class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -25,7 +23,6 @@ class CarInterface(CarInterfaceBase):
     ret.pcmCruise = False  # stock cruise control is kept off
 
     # GM port is a community feature
-    # TODO: make a port that uses a car harness and it only intercepts the camera
     ret.communityFeature = True
 
     # Presence of a camera on the object bus is ok.
@@ -42,7 +39,6 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 1.0
     ret.steerActuatorDelay = 0.1  # Default delay, not measured yet
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
-    #TODO: this should be case based
     if ret.enableGasInterceptor:
       ret.radarOffCan = False
 
@@ -181,10 +177,9 @@ class CarInterface(CarInterfaceBase):
         if not (ret.cruiseState.enabled and ret.standstill):
           be.type = ButtonType.accelCruise  # Suppress resume button if we're resuming from stop so we don't adjust speed.
       elif but == CruiseButtons.DECEL_SET:
-        cloudlog.debug("#@#@#@ SET PRESSED!!")
         be.type = ButtonType.decelCruise
       elif but == CruiseButtons.CANCEL:
-        if not self.CP.enableGasInterceptor: #need to use cancel to disable cc with Pedal
+        if not self.CP.enableGasInterceptor: #need to use cancel to disable cc with Pedal TODO: auto-disengage CC
           be.type = ButtonType.cancel
       elif but == CruiseButtons.MAIN:
         be.type = ButtonType.altButton3
@@ -228,13 +223,11 @@ class CarInterface(CarInterfaceBase):
 
     # For Openpilot, "enabled" includes pre-enable.
     # In GM, PCM faults out if ACC command overlaps user gas.
-    # Does not apply when using interceptor
-    # TODO: Could use the NO_ASCM instead maybe...
-    # TODO: JJS - removed for debugging
-    # if not self.CP.enableGasInterceptor:
-    #   enabled = c.enabled and not self.CS.out.gasPressed
-    # else:
-    enabled = c.enabled
+    # Does not apply when no built-in ACC
+    if not self.CP.enableGasInterceptor or self.CP.carFingerprint in NO_ASCM:
+      enabled = c.enabled and not self.CS.out.gasPressed
+    else:
+      enabled = c.enabled
 
     can_sends = self.CC.update(enabled, self.CS, self.frame,
                                c.actuators,

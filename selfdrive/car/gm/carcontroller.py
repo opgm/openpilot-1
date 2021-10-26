@@ -2,9 +2,10 @@ from cereal import car
 from common.realtime import DT_CTRL
 from common.numpy_fast import interp, clip
 from selfdrive.config import Conversions as CV
-from selfdrive.car import apply_std_steer_torque_limits, create_gas_command, create_gas_multiplier_command, create_gas_divisor_command, create_gas_offset_command
+from selfdrive.car import apply_std_steer_torque_limits, create_gas_command
 from selfdrive.car.gm import gmcan
 from selfdrive.car.gm.values import DBC, NO_ASCM, CanBus, CarControllerParams
+from selfdrive.car.gm.gmcan import create_gas_multiplier_command, create_gas_divisor_command, create_gas_offset_command
 from opendbc.can.packer import CANPacker
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -22,7 +23,6 @@ class CarController():
     #TODO: confirm these values still apply. Based on Bolt Steering Column from 0.7.x
     if CP.carFingerprint in NO_ASCM:
       self.STEER_MAX = 300
-      self.STEER_STEP = 1              # how often we update the steer cmd
       self.STEER_DELTA_UP = 3          # ~0.75s time to peak torque (255/50hz/0.75s)
       self.STEER_DELTA_DOWN = 7       # ~0.3s from peak torque to zero
       self.MIN_STEER_SPEED = 3.
