@@ -1,5 +1,6 @@
 from cereal import car
 from common.numpy_fast import mean
+from selfdrive.car import get_safety_config
 from selfdrive.config import Conversions as CV
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
@@ -14,6 +15,8 @@ class CarState(CarStateBase):
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     self.shifter_values = can_define.dv["ECMPRDNL"]["PRNDL"]
     self.lka_steering_cmd_counter = 0
+    self.lka_steering_cmd_counter_stock = 4
+    self.safety_model_set = False
 
   def update(self, pt_cp, loopback_cp):
     ret = car.CarState.new_message()
@@ -48,6 +51,14 @@ class CarState(CarStateBase):
     ret.steeringTorqueEps = pt_cp.vl["PSCMStatus"]["LKATorqueDelivered"]
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
     self.lka_steering_cmd_counter = loopback_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
+    
+    # Delaying setting safetymodel till carstate has started watching
+    # TODO: Do we need separate var?
+    if not self.safety_model_set:
+      self.CP.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.gm)]
+      self.safety_model_set = True
+    # Watch for lkas on pt bus. 
+    self.lka_steering_cmd_counter_stock = pt_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
 
     # 0 inactive, 1 active, 2 temporarily limited, 3 failed
     self.lkas_status = pt_cp.vl["PSCMStatus"]["LKATorqueDeliveredStatus"]
@@ -109,6 +120,7 @@ class CarState(CarStateBase):
       ("TractionControlOn", "ESPStatus", 0),
       ("EPBClosed", "EPBStatus", 0),
       ("CruiseMainOn", "ECMEngineStatus", 0),
+      ("RollingCounter", "ASCMLKASteeringCmd", 0), # Yes on PT
     ]
 
     checks = [

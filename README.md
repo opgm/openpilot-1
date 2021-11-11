@@ -1,12 +1,21 @@
-Stand Back Labs openpilot GM vehicle extensions
+GM openpilot
 ------
+Custom fork of Comma.ai's openpilot project that adds support for many GM vehicles, including the Chevy Bolt EV.
 
-This is a custom fork of Comma.ai's openpilot project that adds support for many GM vehicles, including the Chevy Bolt EV.
+Preliminary support for the following GM vehicles
+* CHEVROLET VOLT NO RADAR
+* CHEVROLET MALIBU NO RADAR
+* GMC ACADIA DENALI NO RADAR
+* CHEVROLET BOLT EV NO RADAR
+* CHEVROLET EQUINOX NO RADAR
+* CHEVROLET TAHOE NO RADAR
+* CADILLAC ESCALADE ESV (Additional fingerprint)
+* CHEVROLET SILVERADO NO RADAR
 
 Goals:
 * Remain fully compatible with Comma.ai hardware and infrastructure
 * Follow Comma.ai's rules as closely as possible
-* Maintain customizations such that Comma.ai _could_ upstream (even though they likely will not)
+* Maintain customizations such that Comma.ai _could_ upstream.
 
 **Note: If you include any of the changes from this fork in your fork, please don't be a jerk (ahem Hanabi95) - please give credit where it is due**
 

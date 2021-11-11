@@ -35,7 +35,8 @@ class CarInterface(CarInterfaceBase):
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "gm"
-    ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.gm)]
+    ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.noOutput)]
+    #et.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.gm)]
     ret.pcmCruise = False  # stock cruise control is kept off
 
     # Presence of a camera on the object bus is ok.
