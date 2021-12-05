@@ -2,7 +2,7 @@
 from cereal import car
 from math import fabs
 from selfdrive.config import Conversions as CV
-from selfdrive.car.gm.values import CAR, CruiseButtons, \
+from selfdrive.car.gm.values import CAR, HIGH_TORQUE, CruiseButtons, \
                                     AccState, CarControllerParams, NO_ASCM
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
@@ -53,6 +53,8 @@ class CarInterface(CarInterfaceBase):
     # Have to go to read_only if ASCM is online (ACC-enabled cars),
     # or camera is on powertrain bus (LKA cars without ACC).
     
+    if candidate in HIGH_TORQUE:
+      ret.safetyConfigs[0].safetyParam = 1 # set appropriate safety param for increased torque limits to match values.py
     
     # JJS Testing for silverado crash
     if candidate in NO_ASCM:
@@ -180,8 +182,8 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.745
       ret.steerRatio = 16.3 # From a 2019 SILVERADO
       ret.centerToFront = ret.wheelbase * 0.49
-      ret.safetyConfigs[0].safetyParam = 1 # set appropriate safety param for increased torque limits to match values.py
-          
+    
+        
     # TODO: get actual value, for now starting with reasonable value for
     # civic and scaling by mass and wheelbase
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)

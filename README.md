@@ -1,6 +1,9 @@
 openpilot - GM Vehicle Extensions
 ------
 
+IMPORTANT NOTE ON USING A PEDAL INTERCEPTOR: YOU MUST PRESS CC DISENGAGE (NOT DISABLE) AFTER EVERY PRESS OF ACCEL OR DECCEL FOR THE TIME BEING!!
+
+
 Provides basic support for GM vehicles with LKAS that lack radar, including (but not limited to):
 * Chevy Bolt EV
 * Chevy Volt

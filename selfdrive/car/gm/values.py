@@ -31,9 +31,7 @@ class CarControllerParams():
     # Our controller should still keep the 2 second average above
     # -3.5 m/s^2 as per planner limits
 
-    # TODO if this bump works, it belongs in interface per car
-    self.ACCEL_MAX = 4. # m/s^2
-    self.ACCEL_MIN = -4. # m/s^2
+
     
     if CP.carFingerprint in NO_ASCM:
       self.STEER_DELTA_UP = 3          # ~0.75s time to peak torque (255/50hz/0.75s)
@@ -45,6 +43,10 @@ class CarControllerParams():
       self.STEER_DRIVER_ALLOWANCE = 100
       self.STEER_DRIVER_MULTIPLIER = 4
       self.STEER_DRIVER_FACTOR = 100
+      # TODO if this bump works, it belongs in interface per car
+      # It may only apply to silverado...
+      self.ACCEL_MAX = 4. # m/s^2
+      self.ACCEL_MIN = -4. # m/s^2
 
     self.MAX_ACC_REGEN = 1404  # Max ACC regen is slightly less than max paddle regen
     self.GAS_LOOKUP_BP = [-1., 0., self.ACCEL_MAX]
