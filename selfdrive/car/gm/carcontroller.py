@@ -38,8 +38,8 @@ class CarController():
     # Steering (50Hz)
     # Avoid GM EPS faults when transmitting messages too close together: skip this transmit if we just received the
     # next Panda loopback confirmation in the current CS frame.
-    #if CS.lka_steering_cmd_counter != self.lka_steering_cmd_counter_last:
-    #  self.lka_steering_cmd_counter_last = CS.lka_steering_cmd_counter
+    if CS.lka_steering_cmd_counter != self.lka_steering_cmd_counter_last:
+      self.lka_steering_cmd_counter_last = CS.lka_steering_cmd_counter
     if (frame % P.STEER_STEP) == 0:
       lkas_enabled = enabled and not (CS.out.steerWarning or CS.out.steerError) and CS.out.vEgo > P.MIN_STEER_SPEED
       if lkas_enabled:
@@ -52,9 +52,7 @@ class CarController():
       self.apply_steer_last = apply_steer
       # GM EPS faults on any gap in received message counters. To handle transient OP/Panda safety sync issues at the
       # moment of disengaging, increment the counter based on the last message known to pass Panda safety checks.
-      #idx = (CS.lka_steering_cmd_counter + 1) % 4
-      #TODO: JJS: just debugging strange latching...
-      idx = frame % 4
+      idx = (CS.lka_steering_cmd_counter + 1) % 4
 
       can_sends.append(gmcan.create_steering_control(self.packer_pt, CanBus.POWERTRAIN, apply_steer, idx, lkas_enabled))
 

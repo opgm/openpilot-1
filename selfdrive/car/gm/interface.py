@@ -200,7 +200,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.302
       ret.steerRatio = 16.3 # COPIED FROM SILVERADO
       ret.centerToFront = ret.wheelbase * 0.49
-      ret.steerActuatorDelay = 0.075
+      #ret.steerActuatorDelay = 0.075
       ret.pcmCruise = True # TODO: see if this resolves cruiseMismatch
       ret.openpilotLongitudinalControl = False # ASCM vehicles use OP for long
       ret.radarOffCan = True # ASCM vehicles (typically) have radar
