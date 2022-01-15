@@ -52,7 +52,9 @@ class CarController():
       self.apply_steer_last = apply_steer
       # GM EPS faults on any gap in received message counters. To handle transient OP/Panda safety sync issues at the
       # moment of disengaging, increment the counter based on the last message known to pass Panda safety checks.
-      idx = (CS.lka_steering_cmd_counter + 1) % 4
+      #idx = (CS.lka_steering_cmd_counter + 1) % 4
+      #TODO: JJS: just debugging strange latching...
+      idx = frame % 4
 
       can_sends.append(gmcan.create_steering_control(self.packer_pt, CanBus.POWERTRAIN, apply_steer, idx, lkas_enabled))
 
