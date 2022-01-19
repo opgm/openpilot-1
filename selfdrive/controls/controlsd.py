@@ -254,7 +254,6 @@ class Controls:
                                                     LaneChangeState.laneChangeFinishing):
       self.events.add(EventName.laneChange)
 
-    # NOTE: If this is firing, check missing messages in checks in carstate.py
     if not CS.canValid:
       self.events.add(EventName.canError)
 
@@ -265,9 +264,7 @@ class Controls:
       else:
         safety_mismatch = pandaState.safetyModel not in IGNORED_SAFETY_MODES
       if safety_mismatch or self.mismatch_counter >= 200:
-        pass
-        # TODO: JJS: Scorched earth policy
-        # self.events.add(EventName.controlsMismatch)
+        self.events.add(EventName.controlsMismatch)
 
       if log.PandaState.FaultType.relayMalfunction in pandaState.faults:
         self.events.add(EventName.relayMalfunction)
@@ -374,8 +371,6 @@ class Controls:
     if not can_strs:
       self.can_rcv_error_counter += 1
       self.can_rcv_error = True
-      cloudlog.error("###@@@ gm controlsd.py can_strs (timeout?) false")
-      
     else:
       self.can_rcv_error = False
 
@@ -390,8 +385,6 @@ class Controls:
     if self.enabled and any(not ps.controlsAllowed for ps in self.sm['pandaStates']
            if ps.safetyModel not in IGNORED_SAFETY_MODES):
       self.mismatch_counter += 1
-    else:
-      self.mismatch_counter = 0 # Reset mismatch couter when mismatch is cleared
 
     self.distance_traveled += CS.vEgo * DT_CTRL
 
