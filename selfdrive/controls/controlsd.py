@@ -279,13 +279,12 @@ class Controls:
       self.events.add(EventName.usbError)
     # TODO: JJS - Silverado is throwing this on engage. Shock and awe campaign to stop it...  
     elif not self.sm.all_alive_and_valid() or self.can_rcv_error:
-      pass
-      # self.events.add(EventName.commIssue)
-      # if not self.logged_comm_issue:
-      #   invalid = [s for s, valid in self.sm.valid.items() if not valid]
-      #   not_alive = [s for s, alive in self.sm.alive.items() if not alive]
-      #   cloudlog.event("commIssue", invalid=invalid, not_alive=not_alive)
-      #   self.logged_comm_issue = True
+      self.events.add(EventName.commIssue)
+      if not self.logged_comm_issue:
+        invalid = [s for s, valid in self.sm.valid.items() if not valid]
+        not_alive = [s for s, alive in self.sm.alive.items() if not alive]
+        cloudlog.event("commIssue", invalid=invalid, not_alive=not_alive)
+        self.logged_comm_issue = True
     else:
       self.logged_comm_issue = False
 
