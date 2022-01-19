@@ -13,6 +13,7 @@ class CarState(CarStateBase):
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     self.shifter_values = can_define.dv["ECMPRDNL"]["PRNDL"]
     self.lka_steering_cmd_counter = 0
+    self.park_brake = 0
 
   def update(self, pt_cp, loopback_cp):
     ret = car.CarState.new_message()
@@ -67,6 +68,7 @@ class CarState(CarStateBase):
     ret.rightBlinker = pt_cp.vl["BCMTurnSignals"]["TurnSignals"] == 2
     if self.car_fingerprint not in MISSING_MESSAGES:
       self.park_brake = pt_cp.vl["EPBStatus"]["EPBClosed"]
+
     ret.cruiseState.available = bool(pt_cp.vl["ECMEngineStatus"]["CruiseMainOn"])
     ret.espDisabled = pt_cp.vl["ESPStatus"]["TractionControlOn"] != 1
     self.pcm_acc_status = pt_cp.vl["AcceleratorPedal2"]["CruiseState"]
