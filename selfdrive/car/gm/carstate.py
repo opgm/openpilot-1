@@ -3,7 +3,7 @@ from common.numpy_fast import mean
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.car.gm.values import DBC, AccState, CanBus, \
+from selfdrive.car.gm.values import DBC, MISSING_MESSAGES, AccState, CanBus, \
                                     CruiseButtons, STEER_THRESHOLD, EV_CAR
 
 
@@ -65,8 +65,8 @@ class CarState(CarStateBase):
     ret.seatbeltUnlatched = pt_cp.vl["BCMDoorBeltStatus"]["LeftSeatBelt"] == 0
     ret.leftBlinker = pt_cp.vl["BCMTurnSignals"]["TurnSignals"] == 1
     ret.rightBlinker = pt_cp.vl["BCMTurnSignals"]["TurnSignals"] == 2
-
-    self.park_brake = pt_cp.vl["EPBStatus"]["EPBClosed"]
+    if self.car_fingerprint not in MISSING_MESSAGES:
+      self.park_brake = pt_cp.vl["EPBStatus"]["EPBClosed"]
     ret.cruiseState.available = bool(pt_cp.vl["ECMEngineStatus"]["CruiseMainOn"])
     ret.espDisabled = pt_cp.vl["ESPStatus"]["TractionControlOn"] != 1
     self.pcm_acc_status = pt_cp.vl["AcceleratorPedal2"]["CruiseState"]
@@ -108,7 +108,6 @@ class CarState(CarStateBase):
       ("LKATorqueDelivered", "PSCMStatus", 0),
       ("LKATorqueDeliveredStatus", "PSCMStatus", 0),
       ("TractionControlOn", "ESPStatus", 0),
-      ("EPBClosed", "EPBStatus", 0),
       ("CruiseMainOn", "ECMEngineStatus", 0),
     ]
 
@@ -118,7 +117,6 @@ class CarState(CarStateBase):
       ("PSCMStatus", 10),
       ("ESPStatus", 10),
       ("BCMDoorBeltStatus", 10),
-      ("EPBStatus", 20),
       ("EBCMWheelSpdFront", 20),
       ("EBCMWheelSpdRear", 20),
       ("AcceleratorPedal2", 33),
@@ -127,6 +125,14 @@ class CarState(CarStateBase):
       ("PSCMSteeringAngle", 100),
       ("EBCMBrakePedalPosition", 100),
     ]
+
+    # Some cars don't have an EPB...
+    # TODO: search for messsage 560 in fingerprint to detect
+    # TODO: Find CAN message for non electronic parking brake status
+    if (CP.carFingerprint not in MISSING_MESSAGES):
+      signals.append(("EPBClosed", "EPBStatus", 0))
+      checks.append(("EPBStatus", 20))
+    
 
     if CP.enableGasInterceptor:
       signals.append(("INTERCEPTOR_GAS", "GAS_SENSOR", 0))

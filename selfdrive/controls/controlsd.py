@@ -254,10 +254,9 @@ class Controls:
                                                     LaneChangeState.laneChangeFinishing):
       self.events.add(EventName.laneChange)
 
-      # TODO: JJS - figure out why - CS.canValid is false so much
+    # NOTE: If this is firing, check missing messages in checks in carstate.py
     if not CS.canValid:
-      pass
-    #  self.events.add(EventName.canError)
+      self.events.add(EventName.canError)
 
     for i, pandaState in enumerate(self.sm['pandaStates']):
       # All pandas must match the list of safetyConfigs, and if outside this list, must be silent or noOutput
