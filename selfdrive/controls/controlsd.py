@@ -277,7 +277,6 @@ class Controls:
       self.events.add(EventName.radarFault)
     elif not self.sm.valid["pandaStates"]:
       self.events.add(EventName.usbError)
-    # TODO: JJS - Silverado is throwing this on engage. Shock and awe campaign to stop it...  
     elif not self.sm.all_alive_and_valid() or self.can_rcv_error:
       self.events.add(EventName.commIssue)
       if not self.logged_comm_issue:
@@ -342,9 +341,7 @@ class Controls:
       # Check if all manager processes are running
       not_running = {p.name for p in self.sm['managerState'].processes if not p.running}
       if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
-        pass
-        #JJS TODO: fix for real
-        #self.events.add(EventName.processNotRunning)
+        self.events.add(EventName.processNotRunning)
 
     # Only allow engagement with brake pressed when stopped behind another stopped car
     speeds = self.sm['longitudinalPlan'].speeds
