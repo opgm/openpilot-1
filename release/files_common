@@ -70,7 +70,7 @@ selfdrive/version.py
 
 selfdrive/__init__.py
 selfdrive/config.py
-selfdrive/crash.py
+selfdrive/sentry.py
 selfdrive/swaglog.py
 selfdrive/logmessaged.py
 selfdrive/tombstoned.py
@@ -88,6 +88,8 @@ selfdrive/boardd/.gitignore
 selfdrive/boardd/SConscript
 selfdrive/boardd/__init__.py
 selfdrive/boardd/boardd.cc
+selfdrive/boardd/boardd.h
+selfdrive/boardd/main.cc
 selfdrive/boardd/boardd.py
 selfdrive/boardd/boardd_api_impl.pyx
 selfdrive/boardd/can_list_to_can_capnp.cc
@@ -255,6 +257,7 @@ selfdrive/hardware/base.py
 selfdrive/hardware/hw.h
 selfdrive/hardware/eon/__init__.py
 selfdrive/hardware/eon/androidd.py
+selfdrive/hardware/eon/shutdownd.py
 selfdrive/hardware/eon/hardware.h
 selfdrive/hardware/eon/hardware.py
 selfdrive/hardware/eon/neos.py
