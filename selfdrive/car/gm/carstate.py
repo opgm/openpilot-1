@@ -34,7 +34,8 @@ class CarState(CarStateBase):
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(pt_cp.vl["ECMPRDNL"]["PRNDL"], None))
     ret.brake = pt_cp.vl["EBCMBrakePedalPosition"]["BrakePedalPosition"] / 0xd0
     # Brake pedal's potentiometer returns near-zero reading even when pedal is not pressed.
-    if ret.brake < 10/0xd0:
+    # JJS: Bumping to 12 as it seems trucks value floats a bit higher
+    if ret.brake < 12/0xd0:
       ret.brake = 0.
 
     if self.CP.enableGasInterceptor:
