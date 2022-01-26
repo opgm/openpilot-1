@@ -42,6 +42,7 @@ class CarInterface(CarInterfaceBase):
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "gm"
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.gm)]
+    ret.unsafeMode = 1 # UNSAFE_DISABLE_DISENGAGE_ON_GAS
     ret.pcmCruise = False  # stock cruise control is kept off
     ret.openpilotLongitudinalControl = True # ASCM vehicles use OP for long
     ret.radarOffCan = False # ASCM vehicles (typically) have radar
@@ -79,8 +80,9 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 1.0
     ret.steerActuatorDelay = 0.1  # Default delay, not measured yet
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
-    # Check for Electronic Parking Brake
-    ret.hasEPB = 0x230 in fingerprint[0]
+    # # Check for Electronic Parking Brake
+    # TODO: JJS: Add param to cereal
+    # ret.hasEPB = 0x230 in fingerprint[0]
     
     
     if ret.enableGasInterceptor:
@@ -171,8 +173,8 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.
       ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 41.0], [10., 41.0]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.18, 0.26], [0.01, 0.021]]
-      ret.lateralTuning.pid.kdBP = [0.]
-      ret.lateralTuning.pid.kdV = [0.315]  # very sensitive to changes greater than 0.001
+      #ret.lateralTuning.pid.kdBP = [0.] removed from cereal
+      #ret.lateralTuning.pid.kdV = [0.316]  # very sensitive to changes greater than 0.001
       ret.lateralTuning.pid.kf = 0.0001
       #steering parameters from Geniuth
       ret.steerMaxBP = [10., 25.]
@@ -236,15 +238,16 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalTuning.kiBP = [0.]
     ret.longitudinalTuning.kiV = [0.36]
 
-    if ret.enableGasInterceptor and candidate == CAR.BOLT_NR:
-      # Assumes the Bolt is using L-Mode for regen braking.
-      ret.longitudinalTuning.kpBP = [0.0, 5.0, 10.0, 20.0, 35.0]
-      ret.longitudinalTuning.kpV = [0.6, 0.95, 1.19, 1.27, 1.18]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.31, 0.26]
-      ret.stoppingDecelRate = 0.2
-      ret.stopAccel = 0.
-      ret.stoppingControl = True
+    # TODO: Pedal long needs a tune, but this one will probably cause a crash...
+    # if ret.enableGasInterceptor and candidate == CAR.BOLT_NR:
+    #   # Assumes the Bolt is using L-Mode for regen braking.
+    #   ret.longitudinalTuning.kpBP = [0.0, 5.0, 10.0, 20.0, 35.0]
+    #   ret.longitudinalTuning.kpV = [0.6, 0.95, 1.19, 1.27, 1.18]
+    #   ret.longitudinalTuning.kiBP = [0., 35.]
+    #   ret.longitudinalTuning.kiV = [0.31, 0.26]
+    #   ret.stoppingDecelRate = 0.2
+    #   ret.stopAccel = 0.
+    #   ret.stoppingControl = True
 
     ret.steerLimitTimer = 0.4
     ret.radarTimeStep = 0.0667  # GM radar runs at 15Hz instead of standard 20Hz
