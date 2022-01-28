@@ -214,7 +214,7 @@ class CarInterface(CarInterfaceBase):
       ret.minSteerSpeed = -1 * CV.MPH_TO_MS
       ret.mass = 1278. + STD_CARGO_KG
       ret.wheelbase = 3.302
-      ret.steerRatio = 17. # COPIED FROM SILVERADO
+      ret.steerRatio = 16.3 # COPIED FROM SILVERADO
       ret.centerToFront = ret.wheelbase * 0.49
       ret.steerActuatorDelay = 0.075
       ret.pcmCruise = True # TODO: see if this resolves cruiseMismatch
