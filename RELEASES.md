@@ -1,3 +1,7 @@
+Version 0.8.13-ACADIA (2022-01-28)
+========================
+ * Branch specifically for Verylukyguy's Acadia's EPS
+
 Version 0.8.13-GM.5 (2022-01-21)
 ========================
  * Chevy Bolt EV Support (And several others)

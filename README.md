@@ -1,4 +1,4 @@
-openpilot - GM Vehicle Extensions
+openpilot - Acadia specific temp port
 ------
 
 Provides basic support for GM vehicles with LKAS that do not have an ASCM, including (but not limited to):
