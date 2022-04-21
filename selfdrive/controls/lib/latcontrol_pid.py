@@ -8,8 +8,9 @@ class LatControlPID(LatControl):
   def __init__(self, CP, CI):
     super().__init__(CP, CI)
     self.pid = PIDController((CP.lateralTuning.pid.kpBP, CP.lateralTuning.pid.kpV),
-                             (CP.lateralTuning.pid.kiBP, CP.lateralTuning.pid.kiV),
-                             k_f=CP.lateralTuning.pid.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
+                            (CP.lateralTuning.pid.kiBP, CP.lateralTuning.pid.kiV),
+                            k_d=(CP.lateralTuning.pid.kdBP, CP.lateralTuning.pid.kdV),
+                            k_f=CP.lateralTuning.pid.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
     self.get_steer_feedforward = CI.get_steer_feedforward_function()
     
     self.last_curve_is_right = False
@@ -46,7 +47,8 @@ class LatControlPID(LatControl):
       if not self.CP.lateralTuneSplit: # Split tune was disabled live - update to left tune
         self.pid.update_params(k_f=self.CP.lateralTuning.pid.kf,
                               k_p=(self.CP.lateralTuning.pid.kpBP, self.CP.lateralTuning.pid.kpV),
-                              k_i=(self.CP.lateralTuning.pid.kiBP, self.CP.lateralTuning.pid.kiV)
+                              k_i=(self.CP.lateralTuning.pid.kiBP, self.CP.lateralTuning.pid.kiV),
+                              k_d=(self.CP.lateralTuning.pid.kdBP, self.CP.lateralTuning.pid.kdV)
                               )
       self.lateralTuneSplit = self.CP.lateralTuneSplit
 
@@ -83,12 +85,14 @@ class LatControlPID(LatControl):
         if curve_is_right:
           self.pid.update_params(k_f=self.CP.lateralTuningRight.pid.kf,
                                 k_p=(self.CP.lateralTuningRight.pid.kpBP, self.CP.lateralTuningRight.pid.kpV),
-                                k_i=(self.CP.lateralTuningRight.pid.kiBP, self.CP.lateralTuningRight.pid.kiV)
+                                k_i=(self.CP.lateralTuningRight.pid.kiBP, self.CP.lateralTuningRight.pid.kiV),
+                                k_d=(self.CP.lateralTuningRight.pid.kdBP, self.CP.lateralTuningRight.pid.kdV)
                                 )
         else:
           self.pid.update_params(k_f=self.CP.lateralTuning.pid.kf,
                                 k_p=(self.CP.lateralTuning.pid.kpBP, self.CP.lateralTuning.pid.kpV),
-                                k_i=(self.CP.lateralTuning.pid.kiBP, self.CP.lateralTuning.pid.kiV)
+                                k_i=(self.CP.lateralTuning.pid.kiBP, self.CP.lateralTuning.pid.kiV),
+                                k_d=(self.CP.lateralTuning.pid.kdBP, self.CP.lateralTuning.pid.kdV)
                                 )
 
         self.last_curve_is_right = curve_is_right
@@ -111,6 +115,7 @@ class LatControlPID(LatControl):
       pid_log.active = True
       pid_log.p = self.pid.p
       pid_log.i = self.pid.i
+      pid_log.d = self.pid.d
       pid_log.f = self.pid.f
       pid_log.output = output_steer
       pid_log.saturated = self._check_saturation(self.steer_max - abs(output_steer) < 1e-3, CS)

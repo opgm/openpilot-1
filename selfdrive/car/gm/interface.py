@@ -71,8 +71,10 @@ class CarInterface(CarInterfaceBase):
 
     # Start with a baseline lateral tuning for all GM vehicles. Override tuning as needed in each model section below.
     ret.minSteerSpeed = 7 * CV.MPH_TO_MS
-    ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0.], [0.]]
-    ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.00]]
+    ret.lateralTuning.pid.kpBP = [0.]
+    ret.lateralTuning.pid.kpV = [0.2]
+    ret.lateralTuning.pid.kiBP = [0.]
+    ret.lateralTuning.pid.kiV = [0.00]
     ret.lateralTuning.pid.kf = 0.00004   # full torque for 20 deg at 80mph means 0.00007818594
     ret.steerRateCost = 0.5
     ret.steerActuatorDelay = 0.1  # Default delay, not measured yet
@@ -101,15 +103,27 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1607. + STD_CARGO_KG
       ret.wheelbase = 2.69
       ret.steerRatio = 17.7  # Stock 15.7, LiveParameters
+      ret.steerRateCost = 1.0
       tire_stiffness_factor = 0.469 # Stock Michelin Energy Saver A/S, LiveParameters
-      ret.centerToFront = ret.wheelbase * 0.45 # Volt Gen 1, TODO corner weigh
+      ret.steerRatioRear = 0.
+      ret.centerToFront = 0.45 * ret.wheelbase # from Volt Gen 1
 
       ret.lateralTuning.pid.kpBP = [0., 40.]
-      ret.lateralTuning.pid.kpV = [0., 0.17]
+      ret.lateralTuning.pid.kpV = [0.0, .16]
       ret.lateralTuning.pid.kiBP = [0.]
-      ret.lateralTuning.pid.kiV = [0.]
-      ret.lateralTuning.pid.kf = 1. # get_steer_feedforward_volt()
-      ret.steerActuatorDelay = 0.2
+      ret.lateralTuning.pid.kiV = [0.025]
+      ret.lateralTuning.pid.kdBP = [0.]
+      ret.lateralTuning.pid.kdV = [.6]
+      ret.lateralTuning.pid.kf = 1. # !!! ONLY for sigmoid feedforward !!!
+      ret.steerActuatorDelay = 0.18
+
+      # Only tuned to reduce oscillations. TODO.
+      ret.longitudinalTuning.kpBP = [5., 15., 35.]
+      ret.longitudinalTuning.kpV = [1.25, 1.6, 1.3]
+      ret.longitudinalTuning.kiBP = [5., 15., 35.]
+      ret.longitudinalTuning.kiV = [0.2, 0.31, 0.34]
+      ret.longitudinalTuning.kdBP = [5., 25.]
+      ret.longitudinalTuning.kdV = [0.5, 0.0]
 
     elif candidate == CAR.MALIBU or candidate == CAR.MALIBU_NR:
       # supports stop and go, but initial engage must be above 18mph (which include conservatism)
@@ -155,8 +169,10 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.302
       ret.steerRatio = 17.3
       ret.centerToFront = ret.wheelbase * 0.49
-      ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 41.0], [10., 41.0]]
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.13, 0.24], [0.01, 0.02]]
+      ret.lateralTuning.pid.kpBP = [10., 41.0]
+      ret.lateralTuning.pid.kpV = [0.13, 0.24]
+      ret.lateralTuning.pid.kiBP = [10., 41.0]
+      ret.lateralTuning.pid.kiV = [0.01, 0.02]
       ret.lateralTuning.pid.kf = 0.000045
       tire_stiffness_factor = 1.0
 
