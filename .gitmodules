@@ -16,3 +16,6 @@
 [submodule "rednose_repo"]
 	path = rednose_repo
 	url = ../../commaai/rednose.git
+[submodule "scapy"]
+	path = scapy
+	url = https://github.com/opgm/scapy.git

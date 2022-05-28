@@ -1,0 +1,9 @@
+# pylint: skip-file
+from __future__ import annotations
+from typing import Any
+from cereal import car_stub
+
+CEREAL_PATH: str = ...
+
+log: Any = ...
+car: car_stub = ...
