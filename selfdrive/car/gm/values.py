@@ -63,6 +63,7 @@ class CAR:
   SILVERADO_NR = "CHEVROLET SILVERADO NO RADAR"
   SUBURBAN = "CHEVROLET SUBURBAN PREMIER 2019"
   BOLT_EUV = "CHEVROLET BOLT EUV 2022"
+  BOLT_FW = "FP 2.0 Bolt"
 
 
 class Footnote(Enum):
@@ -133,6 +134,44 @@ class CanBus:
   CHASSIS = 2
   SW_GMLAN = 3
   LOOPBACK = 128
+
+
+FW_VERSIONS = {
+  CAR.BOLT_FW: {
+    (Ecu.programmedFuelInjection, 0x18da10f1, None): [
+      b'37805-6A0-8720\x00\x00',
+      b'37805-6A0-9520\x00\x00',
+      b'37805-6A0-9620\x00\x00',
+      b'37805-6A0-9720\x00\x00',
+      b'37805-6A0-A540\x00\x00',
+      b'37805-6A0-A550\x00\x00',
+      b'37805-6A0-A640\x00\x00',
+      b'37805-6A0-A650\x00\x00',
+      b'37805-6A0-A740\x00\x00',
+      b'37805-6A0-A750\x00\x00',
+      b'37805-6A0-A840\x00\x00',
+      b'37805-6A0-A850\x00\x00',
+      b'37805-6A0-A930\x00\x00',
+      b'37805-6A0-AF30\x00\x00',
+      b'37805-6A0-AG30\x00\x00',
+      b'37805-6B2-C520\x00\x00',
+      b'37805-6A0-C540\x00\x00',
+      b'37805-6A1-H650\x00\x00',
+      b'37805-6B2-A550\x00\x00',
+      b'37805-6B2-A560\x00\x00',
+      b'37805-6B2-A650\x00\x00',
+      b'37805-6B2-A660\x00\x00',
+      b'37805-6B2-A720\x00\x00',
+      b'37805-6B2-A810\x00\x00',
+      b'37805-6B2-A820\x00\x00',
+      b'37805-6B2-A920\x00\x00',
+      b'37805-6B2-M520\x00\x00',
+      b'37805-6B2-Y810\x00\x00',
+      b'37805-6M4-B730\x00\x00',
+    ],
+  }
+}
+
 
 FINGERPRINTS = {
   # Astra BK MY17, ASCM unplugged
