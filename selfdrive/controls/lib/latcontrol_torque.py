@@ -1,11 +1,13 @@
 import math
+from typing import Type
 
 from cereal import log
 from common.numpy_fast import interp
+from selfdrive.car.interfaces import CarInterfaceBase
 from selfdrive.controls.lib.latcontrol import LatControl, MIN_STEER_SPEED
 from selfdrive.controls.lib.pid import PIDController
 from selfdrive.controls.lib.drive_helpers import apply_deadzone
-from selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
+from selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY, VehicleModel
 
 # At higher speeds (25+mph) we can assume:
 # Lateral acceleration achieved by a specific car correlates to
@@ -22,7 +24,9 @@ from selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
 FRICTION_THRESHOLD = 0.2
 
 
-def set_torque_tune(tune, MAX_LAT_ACCEL=2.5, FRICTION=0.01, steering_angle_deadzone_deg=0.0):
+def set_torque_tune(tune, MAX_LAT_ACCEL: float = 2.5, FRICTION: float = 0.01, steering_angle_deadzone_deg: float = 0.0):
+  # Prevent div by zero
+  assert(MAX_LAT_ACCEL > 0), "MAX_LAT_ACCEL must be greater than 0"
   tune.init('torque')
   tune.torque.useSteeringAngle = True
   tune.torque.kp = 1.0 / MAX_LAT_ACCEL
@@ -33,17 +37,17 @@ def set_torque_tune(tune, MAX_LAT_ACCEL=2.5, FRICTION=0.01, steering_angle_deadz
 
 
 class LatControlTorque(LatControl):
-  def __init__(self, CP, CI):
+  def __init__(self, CP, CI: Type[CarInterfaceBase]):
     super().__init__(CP, CI)
     self.pid = PIDController(CP.lateralTuning.torque.kp, CP.lateralTuning.torque.ki,
                              k_f=CP.lateralTuning.torque.kf, pos_limit=self.steer_max, neg_limit=-self.steer_max)
     self.get_steer_feedforward = CI.get_steer_feedforward_function()
-    self.use_steering_angle = CP.lateralTuning.torque.useSteeringAngle
-    self.friction = CP.lateralTuning.torque.friction
-    self.kf = CP.lateralTuning.torque.kf
-    self.steering_angle_deadzone_deg = CP.lateralTuning.torque.steeringAngleDeadzoneDeg
+    self.use_steering_angle: bool = CP.lateralTuning.torque.useSteeringAngle
+    self.friction: float = CP.lateralTuning.torque.friction
+    self.kf: float = CP.lateralTuning.torque.kf
+    self.steering_angle_deadzone_deg: float = CP.lateralTuning.torque.steeringAngleDeadzoneDeg
 
-  def update(self, active, CS, VM, params, last_actuators, desired_curvature, desired_curvature_rate, llk):
+  def update(self, active: bool, CS, VM: VehicleModel, params, last_actuators, desired_curvature: float, desired_curvature_rate: float, llk):
     pid_log = log.ControlsState.LateralTorqueState.new_message()
 
     if CS.vEgo < MIN_STEER_SPEED or not active:
