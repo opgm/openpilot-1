@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 import math
-from typing import SupportsFloat
+from typing import SupportsFloat, Type
 
 from cereal import car, log
 from common.numpy_fast import clip
@@ -138,7 +138,7 @@ class Controls:
     self.LoC = LongControl(self.CP)
     self.VM = VehicleModel(self.CP)
 
-    self.LaC: LatControl
+    self.LaC: Type[LatControl]
     if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
       self.LaC = LatControlAngle(self.CP, self.CI)
     elif self.CP.lateralTuning.which() == 'pid':
