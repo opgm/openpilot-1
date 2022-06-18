@@ -71,14 +71,21 @@ class LatControlTorque(LatControl):
 
 
       low_speed_factor = interp(CS.vEgo, [0, 15], [500, 0])
-      setpoint = desired_lateral_accel + low_speed_factor * desired_curvature
-      measurement = actual_lateral_accel + low_speed_factor * actual_curvature
+      setpoint = desired_lateral_accel + (low_speed_factor * desired_curvature)
+      measurement = actual_lateral_accel + (low_speed_factor * actual_curvature)
       error = apply_deadzone(setpoint - measurement, lateral_accel_deadzone)
       pid_log.error = error
 
-      ff = desired_lateral_accel - params.roll * ACCELERATION_DUE_TO_GRAVITY
+      ff = desired_lateral_accel - (params.roll * ACCELERATION_DUE_TO_GRAVITY)
       # convert friction into lateral accel units for feedforward
       friction_compensation = interp(error, [-FRICTION_THRESHOLD, FRICTION_THRESHOLD], [-self.friction, self.friction])
+      # kf is a gain factor (aka multiple) and is itself usually fractional - usually very small
+      # Since the PID controller is also using this kf, it should have the same meaning
+      # 
+      # A zero value should result in no ff; 1 would be no _gain_, over one becomes a multiplier
+      # As implemented heree, this is going to cause ff to increase exponentially as kf gets smaller
+      # And results in a divide-by-zero fault when kf is zero
+      # I'm wondering if this should be a * nd not a / ?
       ff += friction_compensation / self.kf
       freeze_integrator = CS.steeringRateLimited or CS.steeringPressed or CS.vEgo < 5
       output_torque = self.pid.update(error,
