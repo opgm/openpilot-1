@@ -14,8 +14,10 @@ class CarState(CarStateBase):
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     self.shifter_values = can_define.dv["ECMPRDNL2"]["PRNDL2"]
     self.lka_steering_cmd_counter = 0
+    self.lka_dropped = False
+    self.lka_steering_cmd_counter_dropped = -1
 
-  def update(self, pt_cp, loopback_cp):
+  def update(self, pt_cp, loopback_cp, dropped_cp):
     ret = car.CarState.new_message()
 
     self.prev_cruise_buttons = self.cruise_buttons
@@ -49,9 +51,18 @@ class CarState(CarStateBase):
     ret.steeringAngleDeg = pt_cp.vl["PSCMSteeringAngle"]["SteeringWheelAngle"]
     ret.steeringRateDeg = pt_cp.vl["PSCMSteeringAngle"]["SteeringWheelRate"]
     ret.steeringTorque = pt_cp.vl["PSCMStatus"]["LKADriverAppldTrq"]
-    ret.steeringTorqueEps = pt_cp.vl["PSCMStatus"]["LKATorqueDelivered"]
+    ret.steeringTorqueEps = pt_cp.vl["PSCMStatus"]["LKATorqueDelivered"] # TODO: Why isn't this value being used?
     ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD
     self.lka_steering_cmd_counter = loopback_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
+    # lka_steering_cmd_counter_dropped needs to be reset
+    # because we only want it populated when a frame drop has occurred
+    lka_dropped = dropped_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
+    if lka_dropped is None or (not isinstance(lka_dropped,int) and not isinstance(lka_dropped,float)):
+      self.lka_steering_cmd_counter_dropped = -1
+    else:
+      self.lka_steering_cmd_counter_dropped = lka_dropped
+
+    
 
     # 0 inactive, 1 active, 2 temporarily limited, 3 failed
     self.lkas_status = pt_cp.vl["PSCMStatus"]["LKATorqueDeliveredStatus"]
@@ -141,5 +152,17 @@ class CarState(CarStateBase):
     checks = [
       ("ASCMLKASteeringCmd", 0), # Prevent startup CAN Errors and dropped packet errors
     ]
+    # Disable timing check on loopback
+    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, CanBus.LOOPBACK, enforce_checks=False)
 
-    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, CanBus.LOOPBACK)
+  @staticmethod
+  def get_dropped_can_parser(CP):
+    signals = [
+      ("RollingCounter", "ASCMLKASteeringCmd"),
+    ]
+
+    checks = [
+      ("ASCMLKASteeringCmd", 50), # Timing checks are irrelevant on dropped bus
+    ]
+    # Disable timing check on loopback
+    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, CanBus.DROPPED, enforce_checks=False)

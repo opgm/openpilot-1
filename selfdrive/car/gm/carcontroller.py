@@ -5,6 +5,7 @@ from common.numpy_fast import interp
 from opendbc.can.packer import CANPacker
 from selfdrive.car import apply_std_steer_torque_limits
 from selfdrive.car.gm import gmcan
+from selfdrive.car.gm.carstate import CarState
 from selfdrive.car.gm.values import DBC, CanBus, CarControllerParams
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -34,7 +35,7 @@ class CarController:
     self.packer_obj = CANPacker(DBC[CP.carFingerprint]['radar'])
     self.packer_ch = CANPacker(DBC[CP.carFingerprint]['chassis'])
 
-  def update(self, CC, CS):
+  def update(self, CC, CS: CarState):
     actuators = CC.actuators
     hud_control = CC.hudControl
     hud_alert = hud_control.visualAlert
@@ -46,8 +47,13 @@ class CarController:
     can_sends = []
 
     # Steering (50Hz)
+    # When the Panda drops an LKAS frame (due to a violation) apply_steer_last is reset to zero
+    # This mirrors the Panda behavior in OP to avoid destructive feedback loops
+    if CS.lka_steering_cmd_counter_dropped != -1:
+      self.apply_steer_last = 0
+    
     # Avoid GM EPS faults when transmitting messages too close together: skip this transmit if we just received the
-    # next Panda loopback confirmation in the current CS frame.
+    # next Panda loopback confirmation in the current CS frame. TODO: Add timing checks
     if CS.lka_steering_cmd_counter != self.lka_steering_cmd_counter_last:
       self.lka_steering_cmd_counter_last = CS.lka_steering_cmd_counter
     elif (self.frame % self.params.STEER_STEP) == 0:

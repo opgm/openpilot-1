@@ -115,6 +115,7 @@ class CanBus:
   CHASSIS = 2
   SW_GMLAN = 3
   LOOPBACK = 128
+  DROPPED = 130
 
 FINGERPRINTS = {
   # Astra BK MY17, ASCM unplugged
