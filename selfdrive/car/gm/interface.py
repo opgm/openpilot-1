@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from cereal import car
-from math import fabs
+from math import fabs, erf, atan
 
 from common.conversions import Conversions as CV
 from selfdrive.car import STD_CARGO_KG, create_button_enable_events, create_button_event, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint, get_safety_config
@@ -16,32 +16,176 @@ BUTTONS_DICT = {CruiseButtons.RES_ACCEL: ButtonType.accelCruise, CruiseButtons.D
                 CruiseButtons.MAIN: ButtonType.altButton3, CruiseButtons.CANCEL: ButtonType.cancel}
 
 
+
+# meant for traditional ff fits
+def get_steer_feedforward_sigmoid1(angle, speed, ANGLE_COEF, ANGLE_COEF2, ANGLE_OFFSET, SPEED_OFFSET, SIGMOID_COEF_RIGHT, SIGMOID_COEF_LEFT, SPEED_COEF):
+  x = ANGLE_COEF * (angle) / max(0.01,speed)
+  sigmoid = x / (1. + fabs(x))
+  return ((SIGMOID_COEF_RIGHT if angle > 0. else SIGMOID_COEF_LEFT) * sigmoid) * (0.01 + speed + SPEED_OFFSET) ** ANGLE_COEF2 + ANGLE_OFFSET * (angle * 0.05 - atan(angle * 0.05))
+
+# meant for torque fits
+def get_steer_feedforward_erf1(angle, speed, ANGLE_COEF, ANGLE_COEF2, ANGLE_OFFSET, SPEED_OFFSET, SIGMOID_COEF_RIGHT, SIGMOID_COEF_LEFT, SPEED_COEF):
+  x = ANGLE_COEF * (angle) * (40.23 / (max(0.05,speed + SPEED_OFFSET))**SPEED_COEF)
+  sigmoid = erf(x)
+  return ((SIGMOID_COEF_RIGHT if angle < 0. else SIGMOID_COEF_LEFT) * sigmoid) + ANGLE_COEF2 * angle
+
+def get_steer_feedforward_erf(angle, speed, ANGLE_COEF, ANGLE_OFFSET, SPEED_OFFSET, SPEED_POWER, SIGMOID_COEF, SPEED_COEF):
+  x = ANGLE_COEF * (angle + ANGLE_OFFSET)
+  sigmoid = erf(x)
+  return (SIGMOID_COEF * sigmoid) / (max(speed - SPEED_OFFSET, 0.1) * SPEED_COEF)**SPEED_POWER
+
+def get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED):
+  x = ANGLE * (desired_angle + ANGLE_OFFSET)
+  sigmoid = x / (1 + fabs(x))
+  return (SIGMOID_SPEED * sigmoid * v_ego) + (SIGMOID * sigmoid) + (SPEED * v_ego)
+
+
 class CarInterface(CarInterfaceBase):  
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     params = CarControllerParams()
     return params.ACCEL_MIN, params.ACCEL_MAX
 
-  # Determined by iteratively plotting and minimizing error for f(angle, speed) = steer.
+ # Volt determined by iteratively plotting and minimizing error for f(angle, speed) = steer.
   @staticmethod
   def get_steer_feedforward_volt(desired_angle, v_ego):
-    desired_angle *= 0.02904609
-    sigmoid = desired_angle / (1 + fabs(desired_angle))
-    return 0.10006696 * sigmoid * (v_ego + 3.12485927)
+    ANGLE_COEF = 0.90933154
+    ANGLE_COEF2 = 1.99999999
+    ANGLE_OFFSET = 0.12278091
+    SPEED_OFFSET = 8.14335061
+    SIGMOID_COEF_RIGHT = 0.00219725
+    SIGMOID_COEF_LEFT = 0.00202376
+    SPEED_COEF = 0.
+    return get_steer_feedforward_sigmoid1(desired_angle, v_ego, ANGLE_COEF, ANGLE_COEF2, ANGLE_OFFSET, SPEED_OFFSET, SIGMOID_COEF_RIGHT, SIGMOID_COEF_LEFT, SPEED_COEF)
+  
+  # Volt determined by iteratively plotting and minimizing error for f(angle, speed) = steer.
+  @staticmethod
+  def get_steer_feedforward_volt_torque(desired_lateral_accel, v_ego):
+    ANGLE_COEF = 0.09096546
+    ANGLE_COEF2 = 0.12402084
+    ANGLE_OFFSET = 0.
+    SPEED_OFFSET = -3.35899817
+    SIGMOID_COEF_RIGHT = 0.48819415
+    SIGMOID_COEF_LEFT = 0.55110842
+    SPEED_COEF = 0.57397696
+    return get_steer_feedforward_erf1(desired_lateral_accel, v_ego, ANGLE_COEF, ANGLE_COEF2, ANGLE_OFFSET, SPEED_OFFSET, SIGMOID_COEF_RIGHT, SIGMOID_COEF_LEFT, SPEED_COEF)
+  
+
 
   @staticmethod
   def get_steer_feedforward_acadia(desired_angle, v_ego):
-    desired_angle *= 0.09760208
-    sigmoid = desired_angle / (1 + fabs(desired_angle))
-    return 0.04689655 * sigmoid * (v_ego + 10.028217)
+    ANGLE = 0.1314029550298617
+    ANGLE_OFFSET = 0.#8317776927522815
+    SIGMOID_SPEED = 0.03820691400292691
+    SIGMOID = 0.3785405719285944
+    SPEED = -0.0010868615264700465
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
 
+  @staticmethod
+  def get_steer_feedforward_bolt_euv(desired_angle, v_ego):
+    ANGLE = 0.0758345580739845
+    ANGLE_OFFSET = 0.#31396926577596984
+    SIGMOID_SPEED = 0.04367532050459129
+    SIGMOID = 0.43144116109994846
+    SPEED = -0.002654134623368279
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
+  
+  @staticmethod
+  def get_steer_feedforward_bolt(desired_angle, v_ego):
+    ANGLE = 0.06370624896135679
+    ANGLE_OFFSET = 0.#32536345911579184
+    SIGMOID_SPEED = 0.06479105208670367
+    SIGMOID = 0.34485246691603205
+    SPEED = -0.0010645479469461995
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
+  
+  @staticmethod
+  def get_steer_feedforward_bolt_torque(desired_lateral_accel, speed):
+    ANGLE_COEF = 0.18708832
+    ANGLE_COEF2 = 0.28818528
+    ANGLE_OFFSET = 0.#21370785
+    SPEED_OFFSET = 20.00000000
+    SIGMOID_COEF_RIGHT = 0.36997215
+    SIGMOID_COEF_LEFT = 0.43181054
+    SPEED_COEF = 0.34143006
+    x = ANGLE_COEF * (desired_lateral_accel + ANGLE_OFFSET) * (40.23 / (max(0.05,speed + SPEED_OFFSET))**SPEED_COEF)
+    sigmoid = erf(x)
+    return ((SIGMOID_COEF_RIGHT if (desired_lateral_accel + ANGLE_OFFSET) < 0. else SIGMOID_COEF_LEFT) * sigmoid) + ANGLE_COEF2 * (desired_lateral_accel + ANGLE_OFFSET)
+  
+  @staticmethod
+  def get_steer_feedforward_silverado(desired_angle, v_ego):
+    ANGLE = 0.06539361463056717
+    ANGLE_OFFSET = -0.#8390269362439537
+    SIGMOID_SPEED = 0.023681877712247515
+    SIGMOID = 0.5709779025308087
+    SPEED = -0.0016656455765509301
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
+  
+  @staticmethod
+  def get_steer_feedforward_silverado_torque(desired_lateral_accel, speed):
+    ANGLE_COEF = 0.40612450
+    ANGLE_COEF2_RIGHT = 0.14742903
+    ANGLE_COEF2_LEFT = 0.07317035
+    SIGMOID_COEF_RIGHT = 0.35
+    SIGMOID_COEF_LEFT = 0.35
+    x = ANGLE_COEF * (desired_lateral_accel) * (40.23 / (max(0.2,speed)))
+    sigmoid = erf(x)
+    if desired_lateral_accel < 0.:
+      sigmoid_coef = SIGMOID_COEF_RIGHT 
+      slope_coef = ANGLE_COEF2_RIGHT
+    else:
+      sigmoid_coef = SIGMOID_COEF_LEFT
+      slope_coef = ANGLE_COEF2_LEFT
+    return sigmoid_coef * sigmoid + slope_coef * desired_lateral_accel
+  
+  # Volt determined by iteratively plotting and minimizing error for f(angle, speed) = steer.
+  @staticmethod
+  def get_steer_feedforward_tahoe_torque(desired_lateral_accel, v_ego):
+    ANGLE_COEF = -0.53345154
+    ANGLE_OFFSET = 0.
+    SPEED_OFFSET = 0.
+    SPEED_POWER = 1.
+    SIGMOID_COEF = 17.81939495
+    SPEED_COEF = -0.47166994
+    return get_steer_feedforward_erf(desired_lateral_accel, v_ego, ANGLE_COEF, ANGLE_OFFSET, SPEED_OFFSET, SPEED_POWER, SIGMOID_COEF, SPEED_COEF)
+  
+  @staticmethod
+  def get_steer_feedforward_suburban(desired_angle, v_ego):
+    ANGLE = 0.06562376600261893
+    ANGLE_OFFSET = 0.#-2.656819831714162
+    SIGMOID_SPEED = 0.04648878299738527
+    SIGMOID = 0.21826990273744493
+    SPEED = -0.001355528078762762
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
+
+  def get_steer_feedforward_function_torque(self):
+    if self.CP.carFingerprint == CAR.SILVERADO_NR:
+      return self.get_steer_feedforward_silverado_torque
+    elif self.CP.carFingerprint == CAR.VOLT or self.CP.carFingerprint == CAR.VOLT_NR:
+      return self.get_steer_feedforward_volt_torque
+    elif self.CP.carFingerprint == CAR.BOLT_NR:
+      return self.get_steer_feedforward_bolt_torque
+    elif self.CP.carFingerprint == CAR.TAHOE_NR:
+      return self.get_steer_feedforward_tahoe_torque
+    else:
+      return CarInterfaceBase.get_steer_feedforward_torque_default
+  
   def get_steer_feedforward_function(self):
-    if self.CP.carFingerprint == CAR.VOLT:
+    if self.CP.carFingerprint == CAR.VOLT or self.CP.carFingerprint == CAR.VOLT_NR:
       return self.get_steer_feedforward_volt
     elif self.CP.carFingerprint == CAR.ACADIA:
       return self.get_steer_feedforward_acadia
+    elif self.CP.carFingerprint == CAR.BOLT_EUV:
+      return self.get_steer_feedforward_bolt_euv
+    elif self.CP.carFingerprint == CAR.BOLT_NR:
+      return self.get_steer_feedforward_bolt
+    elif self.CP.carFingerprint == CAR.SILVERADO_NR:
+      return self.get_steer_feedforward_silverado
+    elif self.CP.carFingerprint == CAR.SUBURBAN:
+      return self.get_steer_feedforward_suburban
     else:
       return CarInterfaceBase.get_steer_feedforward_default
+
 
   @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None, disable_radar=False):
@@ -195,22 +339,22 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate == CAR.BOLT_NR:
       ret.minEnableSpeed = -1
-      ret.minSteerSpeed = 5 * CV.MPH_TO_MS
+      ret.minSteerSpeed = -1 * CV.MPH_TO_MS # TODO: JJS: Relax other min steer limits and test
       ret.mass = 1616. + STD_CARGO_KG
       ret.wheelbase = 2.60096
       ret.steerRatio = 16.8
-      ret.steerRatioRear = 0.
       ret.centerToFront = 2.0828 #ret.wheelbase * 0.4 # wild guess
       tire_stiffness_factor = 1.0
-      # TODO: Improve stability in turns 
-      # still working on improving lateral
-      
-      # TODO: Should ActuatorDelay be converted to BPV arrays?
-      # TODO: Check if the actuator delay changes based on vehicle speed
-      ret.steerActuatorDelay = 0.
-      ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 41.0], [10., 41.0]]
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.18, 0.275], [0.01, 0.021]]
-      ret.lateralTuning.pid.kf = 0.0002
+
+
+      max_lateral_accel = 3.0
+      ret.lateralTuning.init('torque')
+      ret.lateralTuning.torque.useSteeringAngle = True
+      ret.lateralTuning.torque.kp = 1.8 / max_lateral_accel
+      ret.lateralTuning.torque.ki = 0.6 / max_lateral_accel
+      ret.lateralTuning.torque.kd = 4.0 / max_lateral_accel
+      ret.lateralTuning.torque.kf = 1.0 # use with custom torque ff
+      ret.lateralTuning.torque.friction = 0.005
       
       
       if ret.enableGasInterceptor:
@@ -218,8 +362,8 @@ class CarInterface(CarInterfaceBase):
         ret.longitudinalTuning.kpBP = [0., 35.0]
         ret.longitudinalTuning.kpV = [0.4, 0.06] 
         ret.longitudinalTuning.kiBP = [0., 35.0] 
-        ret.longitudinalTuning.kiV = [0.0, 0.04]
-        ret.longitudinalTuning.kf = 0.25
+        ret.longitudinalTuning.kiV = [0.03, 0.04]
+        ret.longitudinalTuning.kf = 0.27
         ret.stoppingDecelRate = 0.8  # reach stopping target smoothly, brake_travel/s while trying to stop
         ret.stopAccel = 0. # Required acceleraton to keep vehicle stationary
         ret.vEgoStopping = 0.5  # Speed at which the car goes into stopping state, when car starts requesting stopping accel
